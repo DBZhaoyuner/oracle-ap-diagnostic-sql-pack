@@ -1,6 +1,4 @@
-from pathlib import Path
-
-html = r'''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -518,8 +516,3 @@ WHERE enabled_flag &lt;&gt; 'Y';</code></pre>
   </main>
 </body>
 </html>
-'''
-
-path = Path("/mnt/data/oracle_ap_diagnostic_dashboard_index.html")
-path.write_text(html, encoding="utf-8")
-print(path)
