@@ -1,0 +1,525 @@
+from pathlib import Path
+
+html = r'''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle AP Diagnostic Dashboard</title>
+  <style>
+    :root {
+      --ink: #273244;
+      --muted: #657084;
+      --rose: #f4e6ee;
+      --rose-dark: #8a456a;
+      --line: #ead9e2;
+      --blue: #eef5fb;
+      --white: #ffffff;
+      --soft: #fbf7fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(135deg, #fbf4f7 0%, #f7edf3 42%, #eef5fb 100%);
+      line-height: 1.65;
+    }
+
+    .shell {
+      width: min(1100px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 36px 0 70px;
+    }
+
+    .hero {
+      background: rgba(255,255,255,.9);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 34px;
+      text-align: center;
+      box-shadow: 0 18px 48px rgba(93,70,88,.08);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: .02em;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 21px;
+      color: var(--rose-dark);
+    }
+
+    h3 {
+      margin-top: 0;
+      font-size: 17px;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin-top: 10px;
+      font-size: 15px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .grid-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      background: rgba(255,255,255,.9);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 12px 32px rgba(93,70,88,.06);
+    }
+
+    .metric {
+      text-align: center;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .metric .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--rose-dark);
+    }
+
+    .metric .label {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .step {
+      background: var(--rose);
+      border: 1px solid #d8b8ca;
+      border-radius: 16px;
+      padding: 14px 10px;
+      text-align: center;
+      font-weight: 700;
+      color: #5c3650;
+      min-height: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .step span {
+      display: block;
+      font-weight: 400;
+      font-size: 13px;
+      margin-top: 4px;
+      color: #7a5d70;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    th {
+      background: var(--rose);
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    tr:nth-child(even) td {
+      background: #fcf8fb;
+    }
+
+    pre {
+      background: #172033;
+      color: #eef5fb;
+      border-radius: 16px;
+      padding: 18px;
+      overflow-x: auto;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .tag {
+      display: inline-block;
+      background: var(--rose);
+      color: var(--rose-dark);
+      border: 1px solid #d8b8ca;
+      border-radius: 999px;
+      padding: 5px 10px;
+      margin: 4px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .roadmap {
+      display: grid;
+      gap: 12px;
+    }
+
+    .roadmap-row {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--rose);
+      color: var(--rose-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      border: 1px solid #d8b8ca;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      margin-top: 30px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 800px) {
+      .grid-4, .grid-2, .flow {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="shell">
+    <section class="hero">
+      <h1>Oracle AP Diagnostic Dashboard</h1>
+      <div class="sub">Oracle 应付账款诊断仪表盘 · SQL Pack · Business Process · Root Cause Analysis</div>
+      <div class="sub">
+        Portfolio project for Oracle EBS Systems Analyst / ERP Business Analyst / Financial Systems Analyst roles.
+      </div>
+    </section>
+
+    <section class="grid grid-4">
+      <div class="metric">
+        <div class="value">6</div>
+        <div class="label">Diagnostic Areas<br/>诊断领域</div>
+      </div>
+      <div class="metric">
+        <div class="value">8</div>
+        <div class="label">Oracle AP Tables<br/>Oracle AP 数据表</div>
+      </div>
+      <div class="metric">
+        <div class="value">5</div>
+        <div class="label">Root Cause Types<br/>根因类型</div>
+      </div>
+      <div class="metric">
+        <div class="value">100%</div>
+        <div class="label">Portfolio Ready<br/>作品集展示</div>
+      </div>
+    </section>
+
+    <section class="card grid">
+      <h2>1. Business Problem / 业务问题</h2>
+      <p>
+        Business users may report that an invoice is unpaid, duplicated, on hold, missing approval,
+        or not properly accounted. A systems analyst needs to connect business process, Oracle AP
+        tables, SQL diagnostics, and root-cause explanation.
+      </p>
+      <p>
+        业务用户可能反馈发票未付款、重复、被暂停、缺少审批或会计事件异常。
+        系统分析师需要把业务流程、Oracle AP 表、SQL 诊断和根因解释连接起来。
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>2. Oracle AP Business Flow / Oracle AP 业务流程</h2>
+      <div class="flow">
+        <div class="step">Supplier Setup<span>供应商设置</span></div>
+        <div class="step">Invoice Entry<span>发票录入</span></div>
+        <div class="step">Validation<span>发票验证</span></div>
+        <div class="step">Approval / Hold<span>审批 / 暂停</span></div>
+        <div class="step">Payment<span>付款</span></div>
+        <div class="step">Accounting<span>会计入账</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. Oracle AP Data Model / Oracle AP 数据模型</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Oracle Table</th>
+            <th>中文</th>
+            <th>Purpose / 用途</th>
+            <th>Key Fields / 关键字段</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AP_INVOICES_ALL</td>
+            <td>应付发票主表</td>
+            <td>Stores invoice header information.</td>
+            <td>INVOICE_ID, INVOICE_NUM, VENDOR_ID, INVOICE_AMOUNT, PAYMENT_STATUS_FLAG</td>
+          </tr>
+          <tr>
+            <td>AP_INVOICE_LINES_ALL</td>
+            <td>应付发票行表</td>
+            <td>Stores invoice line-level details.</td>
+            <td>INVOICE_ID, LINE_NUMBER, LINE_TYPE_LOOKUP_CODE, AMOUNT</td>
+          </tr>
+          <tr>
+            <td>AP_INVOICE_DISTRIBUTIONS_ALL</td>
+            <td>应付发票分配表</td>
+            <td>Stores accounting distribution details.</td>
+            <td>INVOICE_DISTRIBUTION_ID, DIST_CODE_COMBINATION_ID, ACCOUNTING_DATE</td>
+          </tr>
+          <tr>
+            <td>AP_HOLDS_ALL</td>
+            <td>发票暂停表</td>
+            <td>Tracks invoice hold reason and release status.</td>
+            <td>INVOICE_ID, HOLD_LOOKUP_CODE, RELEASE_LOOKUP_CODE, HOLD_DATE</td>
+          </tr>
+          <tr>
+            <td>AP_PAYMENT_SCHEDULES_ALL</td>
+            <td>付款计划表</td>
+            <td>Stores due date, payment amount, remaining amount.</td>
+            <td>INVOICE_ID, DUE_DATE, AMOUNT_REMAINING, PAYMENT_STATUS_FLAG</td>
+          </tr>
+          <tr>
+            <td>AP_CHECKS_ALL</td>
+            <td>付款支票表</td>
+            <td>Stores payment/check information.</td>
+            <td>CHECK_ID, CHECK_NUMBER, PAYMENT_METHOD_CODE, STATUS_LOOKUP_CODE</td>
+          </tr>
+          <tr>
+            <td>AP_SUPPLIERS</td>
+            <td>供应商表</td>
+            <td>Stores supplier master data.</td>
+            <td>VENDOR_ID, VENDOR_NAME, SEGMENT1, ENABLED_FLAG</td>
+          </tr>
+          <tr>
+            <td>AP_SUPPLIER_SITES_ALL</td>
+            <td>供应商地点表</td>
+            <td>Stores supplier site and payment setup.</td>
+            <td>VENDOR_SITE_ID, VENDOR_ID, PAY_SITE_FLAG, TERMS_ID</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="grid grid-2">
+      <div class="card">
+        <h2>4. Diagnostic Scenarios / 诊断场景</h2>
+        <span class="tag">Unpaid Invoice 未付款发票</span>
+        <span class="tag">Duplicate Invoice 重复发票</span>
+        <span class="tag">Invoice Hold 发票暂停</span>
+        <span class="tag">Supplier Setup 供应商设置</span>
+        <span class="tag">Payment Delay 付款延迟</span>
+        <span class="tag">Accounting Issue 会计事件异常</span>
+      </div>
+
+      <div class="card">
+        <h2>5. Root Cause Categories / 根因分类</h2>
+        <span class="tag">Missing Approval 缺少审批</span>
+        <span class="tag">Supplier Inactive 供应商无效</span>
+        <span class="tag">Invoice Hold 发票被暂停</span>
+        <span class="tag">Payment Schedule Issue 付款计划问题</span>
+        <span class="tag">Accounting Not Created 未生成会计</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>6. SQL Diagnostic Pack / SQL 诊断包</h2>
+
+      <h3>6.1 Unpaid Invoice Analysis / 未付款发票分析</h3>
+      <pre><code>SELECT invoice_id,
+       invoice_num,
+       vendor_id,
+       invoice_amount,
+       payment_status_flag,
+       invoice_date
+FROM ap_invoices_all
+WHERE payment_status_flag &lt;&gt; 'Y'
+ORDER BY invoice_date DESC;</code></pre>
+
+      <h3>6.2 Duplicate Invoice Check / 重复发票检查</h3>
+      <pre><code>SELECT invoice_num,
+       vendor_id,
+       COUNT(*) AS duplicate_count,
+       SUM(invoice_amount) AS total_amount
+FROM ap_invoices_all
+GROUP BY invoice_num, vendor_id
+HAVING COUNT(*) &gt; 1
+ORDER BY duplicate_count DESC;</code></pre>
+
+      <h3>6.3 Invoice Hold Analysis / 发票暂停分析</h3>
+      <pre><code>SELECT aia.invoice_num,
+       aia.invoice_amount,
+       aha.hold_lookup_code,
+       aha.hold_date,
+       aha.release_lookup_code
+FROM ap_invoices_all aia
+JOIN ap_holds_all aha
+  ON aia.invoice_id = aha.invoice_id
+WHERE aha.release_lookup_code IS NULL;</code></pre>
+
+      <h3>6.4 Supplier Validation / 供应商设置检查</h3>
+      <pre><code>SELECT vendor_id,
+       vendor_name,
+       enabled_flag
+FROM ap_suppliers
+WHERE enabled_flag &lt;&gt; 'Y';</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>7. Diagnostic Logic Roadmap / 诊断逻辑线路</h2>
+      <div class="roadmap">
+        <div class="roadmap-row">
+          <div class="num">1</div>
+          <div><strong>Collect issue / 收集问题</strong><br/>Invoice number, supplier, amount, date, user impact.</div>
+        </div>
+        <div class="roadmap-row">
+          <div class="num">2</div>
+          <div><strong>Locate transaction / 定位交易</strong><br/>Find invoice header, supplier, line, hold, payment schedule.</div>
+        </div>
+        <div class="roadmap-row">
+          <div class="num">3</div>
+          <div><strong>Run SQL diagnostics / 运行SQL诊断</strong><br/>Check unpaid, duplicate, hold, supplier, payment, and accounting issues.</div>
+        </div>
+        <div class="roadmap-row">
+          <div class="num">4</div>
+          <div><strong>Identify root cause / 识别根因</strong><br/>Approval missing, hold not released, supplier inactive, payment issue, accounting event issue.</div>
+        </div>
+        <div class="roadmap-row">
+          <div class="num">5</div>
+          <div><strong>Recommend resolution / 提出解决方案</strong><br/>Release hold, correct supplier setup, approve invoice, rerun workflow, or escalate.</div>
+        </div>
+        <div class="roadmap-row">
+          <div class="num">6</div>
+          <div><strong>Document evidence / 记录证据</strong><br/>Save query, result screenshot, business explanation, and interview story.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-2">
+      <div class="card">
+        <h2>8. Interview Story / 面试故事</h2>
+        <p><strong>Situation:</strong> A business user reported that a supplier invoice was not paid.</p>
+        <p><strong>Task:</strong> Investigate the issue using Oracle AP data and explain the cause clearly.</p>
+        <p><strong>Action:</strong> Checked invoice status, holds, supplier setup, payment schedule, and duplicate invoice risk using SQL.</p>
+        <p><strong>Result:</strong> Identified the root cause and provided a clear business explanation and resolution path.</p>
+      </div>
+
+      <div class="card">
+        <h2>9. Job Relevance / 岗位相关性</h2>
+        <p>This project demonstrates:</p>
+        <ul>
+          <li>Oracle AP functional knowledge</li>
+          <li>Oracle EBS data model understanding</li>
+          <li>SQL diagnostic ability</li>
+          <li>Business process thinking</li>
+          <li>Root cause analysis</li>
+          <li>Communication with finance users</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>10. Deliverables / 交付物</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Deliverable</th>
+            <th>中文</th>
+            <th>Purpose / 目的</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>README.md</td>
+            <td>项目说明</td>
+            <td>Explain business problem, logic, data model, and portfolio value.</td>
+          </tr>
+          <tr>
+            <td>sql/diagnostic-queries.sql</td>
+            <td>诊断SQL</td>
+            <td>Show SQL ability and Oracle AP table understanding.</td>
+          </tr>
+          <tr>
+            <td>docs/logic-roadmap.md</td>
+            <td>逻辑路线</td>
+            <td>Show systems analyst thinking.</td>
+          </tr>
+          <tr>
+            <td>screenshots/</td>
+            <td>截图证据</td>
+            <td>Show dashboard, query results, and workflow visuals.</td>
+          </tr>
+          <tr>
+            <td>index.html</td>
+            <td>在线演示首页</td>
+            <td>Public GitHub Pages live demo for recruiters.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer">
+      Created by Renee · Oracle AP Diagnostic SQL Pack · Portfolio for Oracle EBS Systems Analyst
+    </div>
+  </main>
+</body>
+</html>
+'''
+
+path = Path("/mnt/data/oracle_ap_diagnostic_dashboard_index.html")
+path.write_text(html, encoding="utf-8")
+print(path)
